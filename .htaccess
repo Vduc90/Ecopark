@@ -1,0 +1,85 @@
+# .htaccess cho trang web bất động sản Ecolife
+# Đặt file này vào thư mục gốc trên hosting
+
+# Bật mod_rewrite
+RewriteEngine On
+
+# Chuyển hướng HTTP sang HTTPS (Nếu cần)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Chuyển hướng www sang non-www (Nếu cần)
+# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# Cấu hình charset và header
+AddDefaultCharset UTF-8
+<IfModule mod_headers.c>
+    # Đặt HSTS
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # Bảo vệ chống clickjacking
+    Header always append X-Frame-Options SAMEORIGIN
+    
+    # Bảo vệ XSS
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Thiết lập content type
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Cấu hình CSP (Content Security Policy)
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googleapis.com *.gstatic.com *.google-analytics.com *.googletagmanager.com; style-src 'self' 'unsafe-inline' *.googleapis.com; img-src 'self' data: *.googleapis.com *.gstatic.com *.google-analytics.com; connect-src 'self' *.googleapis.com *.google-analytics.com *.googletagmanager.com; font-src 'self' data: *.gstatic.com *.googleapis.com; frame-src 'self'; object-src 'none'"
+</IfModule>
+
+# Thiết lập expire headers cho các file tĩnh
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Thiết lập mặc định
+    ExpiresDefault "access plus 1 month"
+    
+    # CSS, JavaScript, and JSON
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType application/json "access plus 0 seconds"
+    
+    # Hình ảnh
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Web fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Xử lý Route cho React Router - Chuyển hướng tất cả các request về index.html
+# nếu request không phải là file hoặc thư mục tồn tại
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Bảo vệ file .htaccess
+<files .htaccess>
+    order allow,deny
+    deny from all
+</files>
+
+# Bảo vệ các file nhạy cảm
+<FilesMatch "(\.env|\.git|\.svn|\.htpasswd|\.json|\.md|\.yml|\package.json|\package-lock.json)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+
+# Tắt hiển thị danh sách thư mục
+Options -Indexes
+
+# Chặn truy cập đến các thư mục hệ thống
+RewriteRule ^(node_modules|server)/ - [F,L]

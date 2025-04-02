@@ -1,0 +1,206 @@
+/home/ecoparkd67e5/public_html
+VanDuc@2612@
+/home/ecoparkd67e5/domains/ecoparkdaklak.city/public_html
+/domains/ecoparkdaklak.city/public_html/dist
+
+
+PHẦN 6: CẤU HÌNH NGINX/APACHE
+Đối với Nginx
+Tạo file cấu hình
+
+sudo nano /etc/nginx/sites-available/ecolife
+Thêm nội dung sau
+
+server {
+    listen 80;
+    server_name your-domain.com www.your-domain.com;
+    location / {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+Kích hoạt cấu hình và khởi động lại Nginx
+
+sudo ln -s /etc/nginx/sites-available/ecolife /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+Đối với Apache (cPanel/DirectAdmin)
+File .htaccess đã được cấu hình sẵn trong package, không cần thay đổi gì thêm
+Đảm bảo module mod_rewrite đã được bật trên server
+PHẦN 7: CẤU HÌNH SSL (HTTPS)
+Với Let's Encrypt (miễn phí)
+Cài đặt Certbot
+
+sudo apt-get install certbot python3-certbot-nginx
+Lấy chứng chỉ SSL
+
+sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+Làm theo hướng dẫn trên màn hình
+
+Với cPanel/DirectAdmin/Plesk
+Tìm mục "SSL/TLS" hoặc "Let's Encrypt" trong control panel
+Làm theo hướng dẫn để cài đặt SSL cho domain
+PHẦN 8: KIỂM TRA
+Kiểm tra trang người dùng
+
+Truy cập trang web: https://your-domain.com
+Kiểm tra xem tất cả tính năng có hoạt động không
+Kiểm tra trang quản trị
+
+Truy cập: https://your-domain.com/admin/login
+Đăng nhập với:
+Username: admin
+Password: admin123
+Quan trọng: Thay đổi mật khẩu ngay lập tức!
+PHẦN 9: XỬ LÝ SỰ CỐ
+1. Trang hiển thị lỗi 500
+Kiểm tra file log trong /var/log/nginx/error.log hoặc /var/log/apache2/error.log
+Kiểm tra logs của PM2: pm2 logs ecolife
+Đảm bảo thông tin kết nối cơ sở dữ liệu chính xác
+2. Không thể kết nối đến cơ sở dữ liệu
+Kiểm tra thông tin DATABASE_URL trong file .env
+Thử kết nối thủ công đến MySQL để xác nhận thông tin đăng nhập
+Kiểm tra xem IP server có được phép kết nối đến MySQL không
+3. Các file tĩnh không tải được
+Kiểm tra quyền truy cập vào thư mục dist/public/
+Đảm bảo .htaccess đã được tải lên và có quyền truy cập đúng
+PHẦN 10: BẢO MẬT VÀ BẢO TRÌ
+1. Thiết lập backup tự động
+Sử dụng cron job để backup cơ sở dữ liệu hàng ngày:
+0 2 * * * mysqldump -u username -p'password' ecolife_db > /backup/ecolife_db_$(date +\%Y\%m\%d).sql
+2. Cập nhật bảo mật
+Thường xuyên cập nhật các dependencies:
+npm audit fix
+Thay đổi mật khẩu quản trị định kỳ
+3. Giám sát server
+Thiết lập giám sát uptime với UptimeRobot hoặc Pingdom
+Cài đặt cảnh báo khi server gặp vấn đề
+LIÊN HỆ HỖ TRỢ
+Nếu gặp khó khăn trong quá trình triển khai, hãy liên hệ:
+
+Email: support@ecolife.vn
+Điện thoại: 0987654321
+Bạn có thể tham khảo thêm các file hướng dẫn chi tiết đi kèm trong package:
+
+HUONG_DAN_TRIEN_KHAI.md (HƯỚNG_DẪN_TRIỂN_KHAI.md)
+HUONG_DAN_QUAN_TRI.md (HƯỚNG_DẪN_QUẢN_TRỊ.md)
+SERVER_REQUIREMENTS.md
+
+
+# .htaccess cho trang web bất động sản Ecolife
+# Đặt file này vào thư mục gốc trên hosting
+# Bật mod_rewrite
+RewriteEngine On
+# Chuyển hướng HTTP sang HTTPS (Nếu cần)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# Chuyển hướng www sang non-www (Nếu cần)
+# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+# Cấu hình charset và header
+AddDefaultCharset UTF-8
+<IfModule mod_headers.c>
+    # Đặt HSTS
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    
+    # Bảo vệ chống clickjacking
+    Header always append X-Frame-Options SAMEORIGIN
+    
+    # Bảo vệ XSS
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Thiết lập content type
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Cấu hình CSP (Content Security Policy)
+    # Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' *.googleapis.com *.gstatic.com *.google-analytics.com *.googletagmanager.com; style-src 'self' 'unsafe-inline' *.googleapis.com; img-src 'self' data: *.googleapis.com *.gstatic.com *.google-analytics.com; connect-src 'self' *.googleapis.com *.google-analytics.com *.googletagmanager.com; font-src 'self' data: *.gstatic.com *.googleapis.com; frame-src 'self'; object-src 'none'"
+</IfModule>
+# Thiết lập expire headers cho các file tĩnh
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Thiết lập mặc định
+    ExpiresDefault "access plus 1 month"
+    
+    # CSS, JavaScript, and JSON
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType application/json "access plus 0 seconds"
+    
+    # Hình ảnh
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    # Web fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+# Xử lý Route cho React Router - Chuyển hướng tất cả các request về index.html
+# nếu request không phải là file hoặc thư mục tồn tại
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+# Bảo vệ file .htaccess
+<files .htaccess>
+    order allow,deny
+    deny from all
+</files>
+# Bảo vệ các file nhạy cảm
+<FilesMatch "(\.env|\.git|\.svn|\.htpasswd|\.json|\.md|\.yml|\package.json|\package-lock.json)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
+# Tắt hiển thị danh sách thư mục
+Options -Indexes
+# Chặn truy cập đến các thư mục hệ thống
+RewriteRule ^(node_modules|server)/ - [F,L]
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/ecoparkd67e5/domains/ecoparkdaklak.city/public_html"
+PassengerBaseURI "/"
+PassengerNodejs "/home/ecoparkd67e5/nodevenv/domains/ecoparkdaklak.city/public_html/19/bin/node"
+PassengerAppType node
+PassengerStartupFile dist/index.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION BEGIN
+<IfModule Litespeed>
+SetEnv DATABASE_URL mysql://ecoparkd67e5_admin:VanDuc%402612%40@localhost:3306/ecoparkd67e5_ecopark
+SetEnv PORT 5000
+SetEnv NODE_ENV production
+SetEnv JWT_SECRET YK4Nu2YtkeffsQhsEqPk8INzcfaRjZJB
+SetEnv JWT_EXPIRES_IN 7d
+SetEnv BASE_URL https://ecoparkdaklak.city
+</IfModule>
+
+# Chuyển hướng các yêu cầu đến ứng dụng Node.js
+# Thêm phần này vào cuối file .htaccess
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Không chuyển hướng các file tĩnh
+    RewriteCond %{REQUEST_URI} !^/dist/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Hoặc chuyển hướng đến port của Node.js
+    RewriteRule ^(.*)$ http://localhost:5000/$1 [P,L]
+</IfModule>
+
+# Thiết lập proxy
+<IfModule mod_proxy.c>
+    ProxyRequests Off
+    ProxyPreserveHost On
+</IfModule>
+
+# DO NOT REMOVE OR MODIFY. CLOUDLINUX ENV VARS CONFIGURATION END

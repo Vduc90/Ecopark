@@ -1,0 +1,27 @@
+# Production Dependencies cho trang web ECOLIFE
+
+# Express và middleware
+express
+express-session
+connect-pg-simple
+memorystore
+
+# Database
+mysql2
+drizzle-orm
+
+# Authentication
+bcryptjs
+passport
+passport-local
+
+# Email
+nodemailer
+
+# Runtime dependencies
+typescript
+esbuild
+
+# Các gói bổ sung
+zod
+date-fns
